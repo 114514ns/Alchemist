@@ -1,28 +1,37 @@
 package cn.pprocket.alchemist;
 
+import cn.hutool.core.io.file.FileReader;
 import cn.hutool.core.io.resource.ResourceUtil;
-import cn.pprocket.alchemist.internal.ChestResponseBean;
-import cn.pprocket.alchemist.internal.ChestType;
-import cn.pprocket.alchemist.internal.Level;
-import cn.pprocket.alchemist.internal.WearAmount;
+import cn.hutool.core.util.RandomUtil;
+import cn.pprocket.alchemist.internal.*;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-
+@Slf4j
 public class Main {
     static Gson gson = null;
     static List<Chest> chests;
     public static void main(String[] args) throws URISyntaxException {
         gson = new Gson();
-        chests = getChests();
-        Tools.saveResult(gson.toJson(chests));
+        //chests = getChests();
+        long start = System.currentTimeMillis();
+        chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(),new TypeToken<List<Chest>>(){}.getType());
+        //Tools.saveResult(gson.toJson(chests));
         List<Item> itemList = getItemList();
+        System.out.println(System.currentTimeMillis()-start);
+        Item testItem = RandomUtil.randomEle(itemList);
+        List<Item> higher = getHigher(testItem);
+        System.out.println();
         System.out.println();
     }
 
@@ -72,7 +81,7 @@ public class Main {
             boolean isStatTrack = gunName.contains("Stat");
             float price = Float.parseFloat(object.getString("min_price"));
             String levelText = object.getJSONObject("goods").getJSONObject("tags").getJSONObject("rarity").getString("localized_name");
-            Level level;
+            int level;
             if (levelText.contains("隐秘")) {
                 level = Level.COVERT;
             } else if (levelText.contains("保密")) {
@@ -104,9 +113,7 @@ public class Main {
             JSONObject.parseObject(res).getJSONObject("data").getJSONArray("items").forEach(arrEle -> {
                 JSONObject object = (JSONObject) arrEle;
                 Item item = parseItemInChest(object);
-                if (item.getPrice()>=1.01) {
                     var1.add(parseItemInChest(object));
-                }
             });
             Chest chest = new Chest(name,var1);
             chests.add(chest);
@@ -122,16 +129,14 @@ public class Main {
             JSONObject.parseObject(res).getJSONObject("data").getJSONArray("items").forEach(arrEle -> {
                 JSONObject object = (JSONObject) arrEle;
                 Item item = parseItemInChest(object);
-                if (item.getPrice()>=1.01) {
                     var1.add(parseItemInChest(object));
-                }
             });
             Chest chest = new Chest(name,var1);
             chests.add(chest);
         });
         return chests;
     }
-    public static Level getLevel(String name) {
+    public static int getLevel(String name) {
         name  = name.replace("（纪念品）","");
         name = name.replace("（StatTrak™）","");
         for (int i = 0;i<chests.size();i++) {
@@ -140,19 +145,46 @@ public class Main {
                 Item item = c.items.get(j);
                 String v1 = name;
                 String v2 = item.getName();
-                //System.out.println(v1 + "    " + v2);
-                if (v1.contains(v2)) {
+                if (name.contains("抽象派1337")) {
                     System.currentTimeMillis();
-                    if (item.getLevel() == Level.UNKNOWN) {
-                        System.out.println("返回Unknown  名字   " + name);
-                    }
+                    System.currentTimeMillis();
+
+                }
+                if (v1.contains(v2) || v2.contains(v1)) {
+
                     return item.getLevel();
                 }
             }
         }
-        System.out.println("getLevel 返回Unknown  名字  " + name);
+        //System.out.println("getLevel 返回Unknown  名字  " + name);
         return Level.UNKNOWN;
     }
-
+    public static Result compute(Item[] items) {
+        return null;
+    }
+    public static List<Item> getHigher(Item item) {
+        int level = 0;
+        List<Item> result = new ArrayList<>();
+        boolean found = false;
+        for (int i = 0;i<chests.size();i++) {
+            Chest var1 = chests.get(i);
+            for (int j = 0;j<var1.items.size();j++) {
+                if (found == false) {
+                    if (item.getName().contains(var1.items.get(j).name) || var1.items.get(j).name.contains(item.getName())) {
+                        found = true;
+                        level = var1.items.get(j).level;
+                        j = 0;
+                    }
+                } else {
+                    Item item1 = var1.items.get(j);
+                    if (item1.getLevel() == level+1) {
+                        result.add(item1);
+                    }
+                }
+            }
+            break;
+        }
+        return result;
+    }
 }
 
