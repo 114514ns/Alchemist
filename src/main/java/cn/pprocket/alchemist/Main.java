@@ -3,7 +3,7 @@ package cn.pprocket.alchemist;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.pprocket.alchemist.internal.ChestResponseBean;
 import cn.pprocket.alchemist.internal.ChestType;
-import cn.pprocket.alchemist.internal.Result;
+import cn.pprocket.alchemist.internal.Level;
 import cn.pprocket.alchemist.internal.WearAmount;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.gson.Gson;
@@ -17,14 +17,13 @@ import java.util.List;
 
 public class Main {
     static Gson gson = null;
+    static List<Chest> chests;
     public static void main(String[] args) throws URISyntaxException {
         gson = new Gson();
-        List<Chest> chests = getChests();
+        chests = getChests();
         Tools.saveResult(gson.toJson(chests));
+        List<Item> itemList = getItemList();
         System.out.println();
-        for (int i = 0;i<1000000;i++) {
-
-        }
     }
 
     public static boolean isGun(String str) {
@@ -63,7 +62,7 @@ public class Main {
                 String name = object.getString("name");
                 float price = object.getFloat("buff_reference_price");
                 boolean isStatTrack = name.contains("StatTrak");
-                list.add(new Item(name,price,isStatTrack,getWearAmount(name)));
+                list.add(new Item(name,price,isStatTrack,getWearAmount(name),getLevel(name)));
             }
         }
         return list;
@@ -72,7 +71,24 @@ public class Main {
             String gunName = object.getString("localized_name");
             boolean isStatTrack = gunName.contains("Stat");
             float price = Float.parseFloat(object.getString("min_price"));
-            Item item = new Item(gunName,price,isStatTrack,getWearAmount(gunName));
+            String levelText = object.getJSONObject("goods").getJSONObject("tags").getJSONObject("rarity").getString("localized_name");
+            Level level;
+            if (levelText.contains("隐秘")) {
+                level = Level.COVERT;
+            } else if (levelText.contains("保密")) {
+                level = Level.CLASSIFIED;
+            } else if (levelText.contains("受限")) {
+                level = Level.RESTRICTED;
+            } else if (levelText.contains("军规级")) {
+                level = Level.MIL_SPEC;
+            } else if (levelText.contains("工业级")) {
+                level = Level.INDUSTRIAL;
+            } else if (levelText.contains("消费级")) {
+                level = Level.CONSUMER;
+            } else {
+                level = Level.UNKNOWN;
+            }
+            Item item = new Item(gunName,price,isStatTrack,getWearAmount(gunName),level);
             return item;
     }
     public static List<Chest> getChests() {
@@ -87,7 +103,10 @@ public class Main {
             List<Item> var1 = new ArrayList<>();
             JSONObject.parseObject(res).getJSONObject("data").getJSONArray("items").forEach(arrEle -> {
                 JSONObject object = (JSONObject) arrEle;
-                var1.add(parseItemInChest(object));
+                Item item = parseItemInChest(object);
+                if (item.getPrice()>=1.01) {
+                    var1.add(parseItemInChest(object));
+                }
             });
             Chest chest = new Chest(name,var1);
             chests.add(chest);
@@ -102,12 +121,37 @@ public class Main {
             String res = Tools.sendGet(new StringUtil().getChestUrl(code, type));
             JSONObject.parseObject(res).getJSONObject("data").getJSONArray("items").forEach(arrEle -> {
                 JSONObject object = (JSONObject) arrEle;
-                var1.add(parseItemInChest(object));
+                Item item = parseItemInChest(object);
+                if (item.getPrice()>=1.01) {
+                    var1.add(parseItemInChest(object));
+                }
             });
             Chest chest = new Chest(name,var1);
             chests.add(chest);
         });
         return chests;
+    }
+    public static Level getLevel(String name) {
+        name  = name.replace("（纪念品）","");
+        name = name.replace("（StatTrak™）","");
+        for (int i = 0;i<chests.size();i++) {
+            Chest c = chests.get(i);
+            for (int j = 0;j<c.items.size();j++) {
+                Item item = c.items.get(j);
+                String v1 = name;
+                String v2 = item.getName();
+                //System.out.println(v1 + "    " + v2);
+                if (v1.contains(v2)) {
+                    System.currentTimeMillis();
+                    if (item.getLevel() == Level.UNKNOWN) {
+                        System.out.println("返回Unknown  名字   " + name);
+                    }
+                    return item.getLevel();
+                }
+            }
+        }
+        System.out.println("getLevel 返回Unknown  名字  " + name);
+        return Level.UNKNOWN;
     }
 
 }

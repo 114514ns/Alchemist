@@ -6,5 +6,6 @@ public enum Level {
     MIL_SPEC,
     RESTRICTED,
     CLASSIFIED,
-    COVERT
+    COVERT,
+    UNKNOWN
 }

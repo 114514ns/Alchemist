@@ -14,5 +14,6 @@ public class Item {
     public float price;
     public boolean isStatTrack;
     public WearAmount wearAmount;
+    public Level level;
 
 }
