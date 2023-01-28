@@ -1,4 +1,4 @@
-package cn.pprocket.alchemist;
+package cn.pprocket.alchemist.internal;
 
 public enum WearAmount {
     FACTORY_NEW,

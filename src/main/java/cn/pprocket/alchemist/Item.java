@@ -1,5 +1,7 @@
 package cn.pprocket.alchemist;
 
+import cn.pprocket.alchemist.internal.Level;
+import cn.pprocket.alchemist.internal.WearAmount;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
