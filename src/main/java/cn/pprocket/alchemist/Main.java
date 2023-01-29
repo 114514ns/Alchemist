@@ -2,7 +2,8 @@ package cn.pprocket.alchemist;
 
 import cn.hutool.core.io.file.FileReader;
 import cn.hutool.core.io.resource.ResourceUtil;
-import cn.hutool.core.util.RandomUtil;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import cn.pprocket.alchemist.internal.*;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.gson.Gson;
@@ -14,23 +15,29 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
-@Slf4j
 public class Main {
+    private static final Log log = LogFactory.get();
     static Gson gson = null;
     static List<Chest> chests;
-    public static void main(String[] args) throws URISyntaxException {
+    static JSONObject range = null;
+    public static void main(String[] args) {
+        range = JSONObject.parseObject(ResourceUtil.readStr("range.json",Charset.defaultCharset()));
         gson = new Gson();
-        //chests = getChests();
-        long start = System.currentTimeMillis();
-        chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(),new TypeToken<List<Chest>>(){}.getType());
-        //Tools.saveResult(gson.toJson(chests));
+        chests = getChests();
+
+        //chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(),new TypeToken<List<Chest>>(){}.getType());
+        Tools.saveResult(gson.toJson(chests));
         List<Item> itemList = getItemList();
+
+
+        long start = System.currentTimeMillis();
+
         System.out.println(System.currentTimeMillis()-start);
-        Item testItem = RandomUtil.randomEle(itemList);
-        List<Item> higher = getHigher(testItem);
         System.out.println();
         System.out.println();
     }
@@ -71,7 +78,7 @@ public class Main {
                 String name = object.getString("name");
                 float price = object.getFloat("buff_reference_price");
                 boolean isStatTrack = name.contains("StatTrak");
-                list.add(new Item(name,price,isStatTrack,getWearAmount(name),getLevel(name)));
+                list.add(new Item(name,price,isStatTrack,getWearAmount(name),getLevel(name),0,0));
             }
         }
         return list;
@@ -97,7 +104,27 @@ public class Main {
             } else {
                 level = Level.UNKNOWN;
             }
-            Item item = new Item(gunName,price,isStatTrack,getWearAmount(gunName),level);
+            final AtomicReference<Float> min = new AtomicReference<>((float) 0);
+            final AtomicReference<Float> max = new AtomicReference<>((float) 0);
+            range.forEach( (key,value) -> {
+                if (gunName.contains(key)) {
+                    JSONObject var1 = (JSONObject) value;
+                    var1.forEach((key1,value1) -> {
+                        JSONObject var2 = (JSONObject) value1;
+                        if (gunName.contains(var2.getString("name_zh"))) {
+                            min.set(Float.parseFloat(var2.getString("minla")));
+                            max.set(Float.parseFloat(var2.getString("maxla")));
+                        }
+                    });
+                }
+            });
+            if (max.get() ==0) {
+                log.error("Error  Name   " + gunName); //range.json中中文名翻译不完全，现在大概有30多件皮肤有问题
+                //暂时把有问题的皮肤磨损最高默认为1，最低为0
+                min.set((float) 0);
+                max.set((float) 1);
+            }
+            Item item = new Item(gunName,price,isStatTrack,getWearAmount(gunName),level,min.get(),max.get());
             return item;
     }
     public static List<Chest> getChests() {
@@ -160,31 +187,49 @@ public class Main {
         return Level.UNKNOWN;
     }
     public static Result compute(Item[] items) {
+        Map<String,Integer> var1 = new HashMap<>();
+        for (Item item : items) {
+            String name = getItemInChest(item).name;
+            if (!var1.containsKey(name)) {
+                var1.put(name,1);
+            } else {
+                int var2 = var1.get(name);
+                var1.replace(name,var2+1);
+            }
+        }
+        int count = var1.size();  //判断传进来的东西来自多少个收藏品
+        var1.forEach( (key,value) -> {
+
+        });
+
         return null;
     }
     public static List<Item> getHigher(Item item) {
         int level = 0;
         List<Item> result = new ArrayList<>();
         boolean found = false;
+        Chest chest = getItemInChest(item);
+        for (int k = 0;k<chest.items.size();k++) {
+            Item var3 = chest.items.get(k);
+            if (var3.getLevel() == level+1) {
+                result.add(var3);
+            }
+        }
+        return result;
+    }
+    public static Chest getItemInChest(Item item) {
+        Chest chest = null;
         for (int i = 0;i<chests.size();i++) {
             Chest var1 = chests.get(i);
             for (int j = 0;j<var1.items.size();j++) {
-                if (found == false) {
-                    if (item.getName().contains(var1.items.get(j).name) || var1.items.get(j).name.contains(item.getName())) {
-                        found = true;
-                        level = var1.items.get(j).level;
-                        j = 0;
-                    }
-                } else {
-                    Item item1 = var1.items.get(j);
-                    if (item1.getLevel() == level+1) {
-                        result.add(item1);
-                    }
+                Item var3 = var1.items.get(j);
+                if (item.getName().contains(var3.name) || var3.name.contains(item.getName())) {
+                    chest = var1;
+                    break;
                 }
             }
-            break;
         }
-        return result;
+        return chest;
     }
 }
 

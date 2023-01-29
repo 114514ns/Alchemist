@@ -15,5 +15,7 @@ public class Item {
     public boolean isStatTrack;
     public WearAmount wearAmount;
     public int level;
+    public float min;
+    public float max;
 
 }
