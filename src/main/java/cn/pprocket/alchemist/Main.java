@@ -2,22 +2,21 @@ package cn.pprocket.alchemist;
 
 import cn.hutool.core.io.file.FileReader;
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import cn.pprocket.alchemist.internal.*;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Main {
@@ -28,25 +27,28 @@ public class Main {
     public static void main(String[] args) {
         range = JSONObject.parseObject(ResourceUtil.readStr("range.json",Charset.defaultCharset()));
         gson = new Gson();
-        chests = getChests();
+        //chests = getChests();
+        List<Item> var0 = new ArrayList<>();
 
-        //chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(),new TypeToken<List<Chest>>(){}.getType());
-        Tools.saveResult(gson.toJson(chests));
+        chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(),new TypeToken<List<Chest>>(){}.getType());
+        //Tools.saveResult(gson.toJson(chests));
         List<Item> itemList = getItemList();
-
-
-        long start = System.currentTimeMillis();
-
-        System.out.println(System.currentTimeMillis()-start);
-        System.out.println();
+        for (int i = 0;i<10;i++) {
+            Item var1 = RandomUtil.randomEle(itemList);
+            while (getItemInChest(var1) == null) {
+                var1 = RandomUtil.randomEle(itemList);
+            }
+            var0.add(var1);
+        }
+        compute(var0);
         System.out.println();
     }
 
     public static boolean isGun(String str) {
         if ((!str.contains("略有磨损") && !str.contains("崭新出厂")
                 && !str.contains("久经沙场") && !str.contains("破损不堪")
-                && !str.contains("战痕累累")) ||
-                str.contains("★")
+                && !str.contains("战痕累累")) || //有个印花的名字叫战痕累累
+                (str.contains("★") || str.contains("印花"))
         )
         {
             return false;
@@ -119,7 +121,7 @@ public class Main {
                 }
             });
             if (max.get() ==0) {
-                log.error("Error  Name   " + gunName); //range.json中中文名翻译不完全，现在大概有30多件皮肤有问题
+                //log.error("Error  Name   " + gunName); //range.json中中文名翻译不完全，现在大概有30多件皮肤有问题
                 //暂时把有问题的皮肤磨损最高默认为1，最低为0
                 min.set((float) 0);
                 max.set((float) 1);
@@ -164,19 +166,12 @@ public class Main {
         return chests;
     }
     public static int getLevel(String name) {
-        name  = name.replace("（纪念品）","");
-        name = name.replace("（StatTrak™）","");
         for (int i = 0;i<chests.size();i++) {
             Chest c = chests.get(i);
             for (int j = 0;j<c.items.size();j++) {
                 Item item = c.items.get(j);
                 String v1 = name;
                 String v2 = item.getName();
-                if (name.contains("抽象派1337")) {
-                    System.currentTimeMillis();
-                    System.currentTimeMillis();
-
-                }
                 if (v1.contains(v2) || v2.contains(v1)) {
 
                     return item.getLevel();
@@ -186,20 +181,51 @@ public class Main {
         //System.out.println("getLevel 返回Unknown  名字  " + name);
         return Level.UNKNOWN;
     }
-    public static Result compute(Item[] items) {
-        Map<String,Integer> var1 = new HashMap<>();
+    public static Result compute(List<Item> items) {
+        List<ResultItem> result = new ArrayList<>();
+        Map<String,Integer> var1 = new TreeMap<>();
+        List<Item> var0 = new ArrayList<>();
         for (Item item : items) {
-            String name = getItemInChest(item).name;
+            String name = "";
+            try {
+                name = getItemInChest(item).name;
+            } catch (NullPointerException e) {
+                log.error("eRROR ");
+            }
             if (!var1.containsKey(name)) {
                 var1.put(name,1);
+                if (!var0.contains(item)) {
+                    var0.add(item);
+                }
             } else {
                 int var2 = var1.get(name);
+                if (!var0.contains(item)) {
+                    var0.add(item);
+                }
                 var1.replace(name,var2+1);
             }
         }
         int count = var1.size();  //判断传进来的东西来自多少个收藏品
+        if (count != 10) {
+            return new Result();
+        }
         var1.forEach( (key,value) -> {
+            //getHigher()
+        });
+        items.forEach( var2 -> {
 
+            var1.forEach((key,value) -> {
+                String name = getItemInChest(var2).name;
+                if (name.equals(key)) {
+                    List<Item> higher = getHigher(var2);
+                    int num = higher.size();
+                    float rate = 1/num*value/10;
+                    higher.forEach( var3 -> {
+                        //result.add(new ResultItem(var3,rate));
+                    });
+
+                }
+            });
         });
 
         return null;
@@ -223,13 +249,34 @@ public class Main {
             Chest var1 = chests.get(i);
             for (int j = 0;j<var1.items.size();j++) {
                 Item var3 = var1.items.get(j);
-                if (item.getName().contains(var3.name) || var3.name.contains(item.getName())) {
+                String var4 = item.getName().replace(" ",""); // buff箱子返回的皮肤名字和iflow.work的数据不完全一致，可能多个空格少个空格
+                String var5 = var3.name.replace(" ","");
+                if (var4.contains(var5) || var5.contains(var4)) {
                     chest = var1;
                     break;
                 }
             }
         }
+        if (chest == null) {
+            //log.error("Error : {}" + item);
+        }
         return chest;
     }
+    public static List<Item> getItemByLevel(Chest chest,int level) {
+        List<Item> list = new ArrayList<>();
+        chest.items.forEach( ele -> {
+            if (getLevel(ele.getName()) == level) {
+                list.add(ele);
+            }
+        });
+        return list;
+    }
+
+
+}
+@AllArgsConstructor
+class Container {
+    public float rate;
+    public List<Item> list;
 }
 
