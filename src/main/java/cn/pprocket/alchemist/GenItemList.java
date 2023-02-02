@@ -2,6 +2,7 @@ package cn.pprocket.alchemist;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import com.alibaba.fastjson2.JSONObject;
+import com.google.gson.reflect.TypeToken;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.Charset;
@@ -52,6 +53,7 @@ public class GenItemList {
         return arr;
     }
     public static @NotNull List<Item> getItemList() {
+        /*
         String[] arr = ResourceUtil.readStr("item.json", Charset.defaultCharset()).split("\n");
         List<Item> list = new ArrayList<>();
         for (String str : arr) {
@@ -78,5 +80,8 @@ public class GenItemList {
             }
         }
         return list;
+
+         */
+        return gson.fromJson(ResourceUtil.readStr("items.json",Charset.defaultCharset()),new TypeToken<List<Item>>(){}.getType());
     }
 }

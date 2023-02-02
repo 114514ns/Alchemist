@@ -1,5 +1,6 @@
 package cn.pprocket.alchemist;
 
+import cn.hutool.core.io.file.FileWriter;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.pprocket.alchemist.internal.ChestResponseBean;
 import cn.pprocket.alchemist.internal.ChestType;
@@ -7,12 +8,13 @@ import cn.pprocket.alchemist.internal.Level;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.gson.Gson;
 
+import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static cn.pprocket.alchemist.Main.getItemInChest;
+import static cn.pprocket.alchemist.Main.getItemInChestForGen;
 import static cn.pprocket.alchemist.Main.getWearAmount;
 
 public class GenChestList {
@@ -22,6 +24,7 @@ public class GenChestList {
 
     public static void main(String[] args) {
         range = JSONObject.parseObject(ResourceUtil.readStr("range.json", Charset.defaultCharset()));
+        new FileWriter(new File("chests.json")).write(gson.toJson(getChests()),false);
     }
     public static Item parseItemInChest(JSONObject object) {
         String gunName = object.getString("localized_name");
@@ -111,7 +114,7 @@ public class GenChestList {
         int level = item.level;
         List<Item> result = new ArrayList<>();
         boolean found = false;
-        Chest chest = getItemInChest(item);
+        Chest chest = getItemInChestForGen(item);
         for (int k = 0;k<chest.items.size();k++) {
             Item var3 = chest.items.get(k);
             if (var3.getLevel() == level+1) {

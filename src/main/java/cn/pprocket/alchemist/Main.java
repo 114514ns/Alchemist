@@ -5,45 +5,45 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import cn.pprocket.alchemist.internal.*;
+import cn.pprocket.alchemist.internal.Level;
+import cn.pprocket.alchemist.internal.WearAmount;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.AllArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.util.*;
-import java.util.concurrent.Executor;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static cn.pprocket.alchemist.GenChestList.getHigher;
 import static cn.pprocket.alchemist.GenItemList.getItemList;
 
 public class Main {
     private static final Log log = LogFactory.get();
-    static Gson gson = null;
+    static Gson gson = new Gson();
     static List<Chest> chests;
     static JSONObject range = null;
     public static void init() {
         range = JSONObject.parseObject(ResourceUtil.readStr("range.json",Charset.defaultCharset()));
-        gson = new Gson();
         chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(),new TypeToken<List<Chest>>(){}.getType());
+
     }
     public static void main(String[] args) {
 
 
         //chests = getChests();
         Main.init();
-
         //Tools.saveResult(gson.toJson(chests));
         List<Item> itemList = getItemList();
         //Tools.writeFile(gson.toJson(itemList),"items.json");
-        System.exit(0);
+        //System.exit(0);
         int count = 5000;
         long start = System.currentTimeMillis();
         ExecutorService service = Executors.newFixedThreadPool(12);
@@ -168,6 +168,12 @@ public class Main {
         return result;
     }
 
+    /**
+     *
+     * @param item 物品
+     * @return 获取这个物品所属的磨损等级的最小磨损
+     */
+
     public static float getMinAmount(Item item) {
         String name = item.getName();
         if (item.name.contains("崭新出厂")) {
@@ -184,6 +190,12 @@ public class Main {
             return 1.14514F;
         }
     }
+
+    /**
+     *
+     * @param items 物品集合
+     * @return 获取List里面的物品平均磨损
+     */
     public static float getAverageAmount(List<Item> items) {
         float total = 0;
         for (int i = 0;i<items.size();i++) {
@@ -192,30 +204,26 @@ public class Main {
         }
         return total/10;
     }
-
-    public static Map<Item,Chest> cache = new HashMap<>();
-    public static Chest getItemInChest(Item item) {
-        if (cache.containsKey(item)) {
-            return cache.get(item);
-        }
-        Chest chest = null;
-        for (int i = 0;i<chests.size();i++) {
-            Chest var1 = chests.get(i);
-            for (int j = 0;j<var1.items.size();j++) {
-                Item var3 = var1.items.get(j);
-                String var4 = StringUtils.replace(item.getName()," ",""); // buff箱子返回的皮肤名字和iflow.work的数据不完全一致，可能多个空格少个空格
-                String var5 = StringUtils.replace(var3.getName()," ","");
-                if (var4.contains(var5) || var5.contains(var4)) {
-                    chest = var1;
-                    break;
+    public static Chest getItemInChestForGen(Item item) {
+        for (int i = 0; i < chests.size(); i++) {
+            Chest chest = chests.get(i);
+            for (int j = 0; j < chest.items.size(); j++) {
+                Item var0 = chest.items.get(j);
+                if (item.getName().contains(var0.getName())) {
+                    return chest;
                 }
             }
         }
-        if (chest == null) {
-            log.error("Error : {}" + item);
-            System.currentTimeMillis();
+        return null;
+    }
+    public static Chest getItemInChest(Item item) {
+        for (int i = 0;i<chests.size();i++) {
+            Chest chest = chests.get(i);
+            if (chest.name.equals(item.chestName)) {
+                return chest;
+            }
         }
-        return chest;
+        return null;
     }
 
 

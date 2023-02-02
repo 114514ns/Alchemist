@@ -2,10 +2,7 @@ package cn.pprocket.alchemist;
 
 import cn.pprocket.alchemist.internal.Level;
 import cn.pprocket.alchemist.internal.WearAmount;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,9 +10,8 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @ToString
-
 public class Item {
-    private static List<Item> itemList = GenItemList.getItemList();
+    //private static List<Item> itemList = GenItemList.getItemList();
     public String name;
     public float price;
     public boolean isStatTrack;
@@ -30,15 +26,4 @@ public class Item {
         name = name.replace("（StatTrak™）","");
         return name;
     }
-    public static Item forName(String name) {
-        for (int i =0;i<itemList.size();i++) {
-            Item var0 = itemList.get(i);
-            if (name.contains(var0.getName())) {
-                return var0;
-            }
-        }
-        return null;
-    }
-
-
 }
