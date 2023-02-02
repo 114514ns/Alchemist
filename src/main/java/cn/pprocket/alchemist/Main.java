@@ -73,7 +73,7 @@ public class Main {
                     }
 
                      */
-                        if (var1.getLevel() == finalL && var1.higherName.size() != 0 && var1.isStatTrack()== bean.isStatTrack()) {
+                        if (var1.getLevel() == finalL && var1.higherName.size() != 0) {
                             var0.add(var1);
                         } else {
                             i--;
@@ -135,16 +135,6 @@ public class Main {
             FileReader reader = new FileReader(file);
             return gson.fromJson(reader.readString(), ConfigBean.class);
         }
-    }
-    public static boolean checkLevel(List<Item> item) {
-        int first = item.get(0).getLevel();
-        boolean result = true;
-        for (int i =0;i< item.size();i++) {
-            if (item.get(i).level != first) {
-                result = false;
-            }
-        }
-        return result;
     }
     public static WearAmount getWearAmount(float amount) {
         if (amount<=0.06) {
@@ -228,12 +218,15 @@ public class Main {
                         }
                         var4.add(new ResultItem(var3, getWearAmount(amount), amount, rate));
                     }
+                    result1.setSpend(spend);
+                    result1.setInput(items);
+                    result1.setList(var4);
+                    result1.setEarnRate(earnRate.get());
+                    if (earnRate.get()>=0.7) {
+                        System.currentTimeMillis();
+                    }
                 }
-                result1.setSpend(spend);
-                result1.setInput(items);
-                result1.setList(var4);
-                result1.setEarnRate(earnRate.get());
-                System.currentTimeMillis();
+
             });
         });
         return result1;
