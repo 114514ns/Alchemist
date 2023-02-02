@@ -53,7 +53,6 @@ public class GenItemList {
         return arr;
     }
     public static @NotNull List<Item> getItemList() {
-        /*
         String[] arr = ResourceUtil.readStr("item.json", Charset.defaultCharset()).split("\n");
         List<Item> list = new ArrayList<>();
         for (String str : arr) {
@@ -68,7 +67,7 @@ public class GenItemList {
                 }
                 Item var0 = new Item(name,price,isStatTrack,getWearAmount(name),getLevel(name),0,0,null,null);
                 float[] var1 = getItemRange(var0);
-                var0.chestName = getItemInChest(var0).name;
+                var0.chestName = getItemInChestForGen(var0).name;
                 List<String> higher = new ArrayList<>();
                 getHigher(var0).forEach( var2 -> {
                     higher.add(var2.name);
@@ -81,7 +80,7 @@ public class GenItemList {
         }
         return list;
 
-         */
-        return gson.fromJson(ResourceUtil.readStr("items.json",Charset.defaultCharset()),new TypeToken<List<Item>>(){}.getType());
+
+        //return gson.fromJson(ResourceUtil.readStr("items.json",Charset.defaultCharset()),new TypeToken<List<Item>>(){}.getType());
     }
 }
