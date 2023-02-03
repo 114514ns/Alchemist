@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.google.gson.reflect.TypeToken;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,13 +54,14 @@ public class GenItemList {
         return arr;
     }
     public static @NotNull List<Item> getItemList() {
+
         String[] arr = ResourceUtil.readStr("item.json", Charset.defaultCharset()).split("\n");
         List<Item> list = new ArrayList<>();
         for (String str : arr) {
-            if (isGun(str))  {
+            if (isGun(str) && str.contains("buff_optimal_price"))  {
                 JSONObject object = JSONObject.parseObject(str);
                 String name = object.getString("name");
-                float price = object.getFloat("buff_reference_price");
+                float price = object.getBigDecimal("buff_optimal_price").floatValue();
                 boolean isStatTrack = name.contains("StatTrak");
                 int level = getLevel(name);
                 if (level == 6){
@@ -79,6 +81,8 @@ public class GenItemList {
             }
         }
         return list;
+
+
 
 
         //return gson.fromJson(ResourceUtil.readStr("items.json",Charset.defaultCharset()),new TypeToken<List<Item>>(){}.getType());

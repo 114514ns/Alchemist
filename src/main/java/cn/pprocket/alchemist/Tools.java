@@ -6,8 +6,10 @@ import cn.hutool.http.HttpUtil;
 import lombok.SneakyThrows;
 
 import java.io.File;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Tools {
     public static String sendGet(String url) {
@@ -45,5 +47,9 @@ public class Tools {
             return true;
         }
         return false;
+    }
+    public static List<?> removeDuplicationByStream(List<?> list) {
+        List newList = list.stream().distinct().collect(Collectors.toList());
+        return newList;
     }
 }

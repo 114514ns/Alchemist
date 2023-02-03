@@ -39,11 +39,14 @@ public class Main {
     static List<Chest> chests;
     static JSONObject range = null;
     static float mostSpend;
+
     public static void init() {
-        range = JSONObject.parseObject(ResourceUtil.readStr("range.json",Charset.defaultCharset()));
-        chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(),new TypeToken<List<Chest>>(){}.getType());
+        range = JSONObject.parseObject(ResourceUtil.readStr("range.json", Charset.defaultCharset()));
+        chests = gson.fromJson(FileReader.create(new File("chest.json")).readString(), new TypeToken<List<Chest>>() {
+        }.getType());
 
     }
+
     public static void main(String[] args) {
 
 
@@ -55,35 +58,37 @@ public class Main {
         //System.exit(0);
         long start = System.currentTimeMillis();
         ConfigBean bean = checkConfig();
-        int count = bean.getCount()/5;
+        int count = bean.getCount() / 5;
         mostSpend = bean.getPrice();
         List<Result> results = new ArrayList<>();
         ExecutorService service = Executors.newFixedThreadPool(12);
-        for (int l = 0;l<=4;l++) {
-            for (int j = 0;j<count;j++) {
-
+        for (int l = 0; l <= 4; l++) {
+            for (int j = 0; j < count; j++) {
                 int finalL = l;
-                service.execute( () -> {
-                    List<Item> var0 = new ArrayList<>();
-                    for (int i = 0;i<10;i++) {
-                        Item var1 = RandomUtil.randomEle(itemList);
+                service.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        List<Item> var0 = new ArrayList<>();
+                        for (int i = 0; i < 10; i++) {
+                            Item var1 = RandomUtil.randomEle(itemList);
                     /*
                     while (getItemInChest(var1) == null || var1.getLevel() == 6 || getHigher(var1).size() == 0 || var1.getLevel() == 5 || var1.isStatTrack  ) {
                         var1 = RandomUtil.randomEle(itemList);
                     }
 
                      */
-                        if (var1.getLevel() == finalL && var1.higherName.size() != 0) {
-                            var0.add(var1);
-                        } else {
-                            i--;
+                            if (var1.getLevel() == finalL && var1.higherName.size() != 0) {
+                                var0.add(var1);
+                            } else {
+                                i--;
+                            }
                         }
+                        Result compute = compute(var0);
+                        if (compute.spend <= bean.getPrice() && compute.earnRate >= bean.getRate()) {
+                            results.add(compute);
+                        }
+                        var0.clear();
                     }
-                    Result compute = compute(var0);
-                    if (compute.spend <= bean.getPrice() && compute.earnRate >= bean.getRate()) {
-                        results.add(compute);
-                    }
-                    var0.clear();
                 });
 
             }
@@ -98,7 +103,7 @@ public class Main {
         }
         writeResult(results);
 
-        System.out.println((System.currentTimeMillis()-start)*1.0f/count);
+        System.out.println((System.currentTimeMillis() - start) * 1.0f / count);
     }
 
     public static WearAmount getWearAmount(@NotNull String name) {
@@ -116,36 +121,39 @@ public class Main {
             return WearAmount.ERROR;
         }
     }
+
     public static void writeResult(List<Result> list) {
         File file = new File("result.json");
         FileWriter writer = FileWriter.create(file);
-        writer.write("",false); //清空
+        writer.write("", false); //清空
         writer.write(gson.toJson(list));
     }
+
     @SneakyThrows
     public static ConfigBean checkConfig() {
         File file = new File("config.json");
         if (!file.exists()) {
             file.createNewFile();
             FileWriter writer = FileWriter.create(file);
-            ConfigBean bean = new ConfigBean(500,114514,100,false,0.6f);
-            writer.write(gson.toJson(bean,ConfigBean.class),false);
+            ConfigBean bean = new ConfigBean(500, 114514, 100, false, 0.6f);
+            writer.write(gson.toJson(bean, ConfigBean.class), false);
             return bean;
         } else {
             FileReader reader = new FileReader(file);
             return gson.fromJson(reader.readString(), ConfigBean.class);
         }
     }
+
     public static WearAmount getWearAmount(float amount) {
-        if (amount<=0.06) {
+        if (amount <= 0.06) {
             return WearAmount.FACTORY_NEW;
-        } else if (amount<=0.14) {
+        } else if (amount <= 0.14) {
             return WearAmount.MINIMAL_WEAR;
-        } else if (amount<=0.37) {
+        } else if (amount <= 0.37) {
             return WearAmount.FIELD_TESTED;
-        } else if (amount<=0.45) {
+        } else if (amount <= 0.45) {
             return WearAmount.WELL_WORN;
-        } else  {
+        } else {
             return WearAmount.BATTLE_SCARRED;
         }
     }
@@ -153,9 +161,9 @@ public class Main {
 
     public static int getLevel(String name) {
 
-        for (int i = 0;i<chests.size();i++) {
+        for (int i = 0; i < chests.size(); i++) {
             Chest c = chests.get(i);
-            for (int j = 0;j<c.items.size();j++) {
+            for (int j = 0; j < c.items.size(); j++) {
                 Item item = c.items.get(j);
                 String v1 = name;
                 String v2 = item.getName();
@@ -167,10 +175,11 @@ public class Main {
         //System.out.println("getLevel 返回Unknown  名字  " + name);
         return Level.UNKNOWN;
     }
+
     public static Result compute(List<Item> items) {
         float spend = getAllPrice(items);
         List<ResultItem> result = new ArrayList<>();
-        Map<String,Integer> var1 = new TreeMap<>();
+        Map<String, Integer> var1 = new TreeMap<>();
         List<Item> var0 = new ArrayList<>();
         Result result1 = new Result();
         for (Item item : items) {
@@ -181,7 +190,7 @@ public class Main {
                 log.error("eRROR ");
             }
             if (!var1.containsKey(name)) {
-                var1.put(name,1);
+                var1.put(name, 1);
                 if (!var0.contains(item)) {
                     var0.add(item);
                 }
@@ -190,7 +199,7 @@ public class Main {
                 if (!var0.contains(item)) {
                     var0.add(item);
                 }
-                var1.replace(name,var2+1);
+                var1.replace(name, var2 + 1);
             }
         }
         float averageAmount = getAverageAmount(items);
@@ -198,14 +207,14 @@ public class Main {
         AtomicReference<Float> earnRate = new AtomicReference<>((float) 0);
         List<Item> alreadyAddHigher = new ArrayList<>();
         List<ResultItem> var4 = new ArrayList<>();
-        items.forEach( var2 -> {
-            var1.forEach((key,value) -> {
+        items.forEach(var2 -> {
+            var1.forEach((key, value) -> {
                 String name = getItemInChest(var2).name;
                 if (name.equals(key)) {
                     List<Item> higher = getHigher(var2);
                     int num = higher.size();
-                    float rate = (float) (1.0/num*value/10);
-                    for (int i = 0;i< higher.size();i++) {
+                    float rate = (float) (1.0 / num * value / 10);
+                    for (int i = 0; i < higher.size(); i++) {
                         Item var3 = higher.get(i);
                         if (alreadyAddHigher.contains(var3)) {
                             break;
@@ -222,7 +231,7 @@ public class Main {
                     result1.setInput(items);
                     result1.setList(var4);
                     result1.setEarnRate(earnRate.get());
-                    if (earnRate.get()>=0.7) {
+                    if (earnRate.get() >= 0.6) {
                         System.currentTimeMillis();
                     }
                 }
@@ -233,7 +242,6 @@ public class Main {
     }
 
     /**
-     *
      * @param item 物品
      * @return 获取这个物品所属的磨损等级的最小磨损
      */
@@ -254,27 +262,28 @@ public class Main {
             return 1.14514F;
         }
     }
+
     public static float getAllPrice(List<Item> items) {
         float num = 0;
         for (Item item : items) {
-            num+=item.getPrice();
+            num += item.getPrice();
         }
         return num;
     }
 
     /**
-     *
      * @param items 物品集合
      * @return 获取List里面的物品平均磨损
      */
     public static float getAverageAmount(List<Item> items) {
         float total = 0;
-        for (int i = 0;i<items.size();i++) {
+        for (int i = 0; i < items.size(); i++) {
             Item item = items.get(i);
-            total+=getMinAmount(item);
+            total += getMinAmount(item);
         }
-        return total/10;
+        return total / 10;
     }
+
     public static Chest getItemInChestForGen(Item item) {
         for (int i = 0; i < chests.size(); i++) {
             Chest chest = chests.get(i);
@@ -287,8 +296,9 @@ public class Main {
         }
         return null;
     }
+
     public static Chest getItemInChest(Item item) {
-        for (int i = 0;i<chests.size();i++) {
+        for (int i = 0; i < chests.size(); i++) {
             Chest chest = chests.get(i);
             if (chest.name.equals(item.chestName)) {
                 return chest;
@@ -299,6 +309,7 @@ public class Main {
 
 
 }
+
 @AllArgsConstructor
 class Container {
     public float rate;
